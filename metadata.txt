@@ -11,7 +11,7 @@
 [general]
 name=SpatialFilter
 qgisMinimumVersion=2.0
-description=Provides CAD-like input for QGIS : digitize features with precise numerical mouse constraints (demo : https://vimeo.com/85052231)
+description= DSG
 version=0.60
 author=Cesar Augusto Piangers
 email=cesarpiangers.@gmail.com
