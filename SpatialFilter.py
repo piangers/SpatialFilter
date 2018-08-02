@@ -123,7 +123,7 @@ class SpatialFilter():
             self.myRubberBand.reset(QGis.Polygon)
             canvas=self.iface.mapCanvas()
             
-	    c=canvas.mapRenderer().destinationCrs().authid() # Get EPSG.
+	        c=canvas.mapRenderer().destinationCrs().authid() # Get EPSG.
             rep = c.replace("EPSG:","") 
             string = U"st_intersects(geom,st_geomfromewkt('SRID="+rep+";"+g+"'))"
             
