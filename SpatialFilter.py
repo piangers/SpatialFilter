@@ -37,14 +37,11 @@ class SpatialFilter():
         self.previousMapTool = self.iface.mapCanvas().mapTool()
         self.myMapTool = QgsMapToolEmitPoint( self.iface.mapCanvas() )
         self.isEditing = 0
-	self.vlyr = QgsVectorLayer("Polygon?crs=EPSG:31982", "temporary_polygons", "memory")
+	
+        self.vlyr = QgsVectorLayer("Polygon?crs=EPSG:31982", "Reference_polygons", "virtual")
         self.dprov = self.vlyr.dataProvider()
 
-         # Add field to virtual layer 
-        self.dprov.addAttributes([QgsField("name", QVariant.String),
-                             QgsField("size", QVariant.Double)])
-
-        self.vlyr.updateFields()
+        
         # Access ID 
         self.fields = self.dprov.fields()
        
@@ -97,21 +94,13 @@ class SpatialFilter():
         elif clickedButton == Qt.RightButton and self.myRubberBand.numberOfVertices() > 2:
             self.isEditing = 0
 
-	    # open input dialog     
-            (description, False) = QInputDialog.getText(self.iface.mainWindow(), "Description", "Description for Polygon at x and y", QLineEdit.Normal, 'My Polygon')
-            
             # create feature and set geometry.
                     
             poly = QgsFeature() 
             geomP = self.myRubberBand.asGeometry()
             poly.setGeometry(geomP)
             g=geomP.exportToWkt() # Get WKT coordenates.
-            #print g
-	        #set attributes
-            indexN = self.dprov.fieldNameIndex('name') 
-            indexA = self.dprov.fieldNameIndex('size') 
-            poly.setAttributes([QgsDistanceArea().measurePolygon(self.coordinates), indexA])
-            poly.setAttributes([description, indexN])
+            
 
             #add feature                 
             self.dprov.addFeatures([poly])
@@ -127,11 +116,12 @@ class SpatialFilter():
             rep = c.replace("EPSG:","") 
             string = U"st_intersects(geom,st_geomfromewkt('SRID="+rep+";"+g+"'))"
             
-           
+            
             self.layers = self.iface.mapCanvas().layers()
             
             for layer in self.layers:
                 layer.setSubsetString(string)
+            
             
 
             self.myRubberBand.reset(QGis.Polygon)
