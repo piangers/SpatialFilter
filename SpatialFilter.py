@@ -37,13 +37,6 @@ class SpatialFilter():
         self.previousMapTool = self.iface.mapCanvas().mapTool()
         self.myMapTool = QgsMapToolEmitPoint( self.iface.mapCanvas() )
         self.isEditing = 0
-	
-        self.vlyr = QgsVectorLayer("Polygon?crs=EPSG:31982", "Reference_polygons", "virtual")
-        self.dprov = self.vlyr.dataProvider()
-
-        
-        # Access ID 
-        self.fields = self.dprov.fields()
        
 
     def initSignals(self):
@@ -100,33 +93,26 @@ class SpatialFilter():
             geomP = self.myRubberBand.asGeometry()
             poly.setGeometry(geomP)
             g=geomP.exportToWkt() # Get WKT coordenates.
-            
 
-            #add feature                 
-            self.dprov.addFeatures([poly])
-            self.vlyr.updateExtents()
-
-            #add layer      
-            self.vlyr.triggerRepaint()
-            QgsMapLayerRegistry.instance().addMapLayers([self.vlyr])
-            self.myRubberBand.reset(QGis.Polygon)
             canvas=self.iface.mapCanvas()
-            
-	    c=canvas.mapRenderer().destinationCrs().authid() # Get EPSG.
+            c = canvas.mapRenderer().destinationCrs().authid() # Get EPSG.
             rep = c.replace("EPSG:","") 
+            self.vlyr = QgsVectorLayer("?query=SELECT geom_from_wkt('%s') as geometry&geometry=geometry:3:%s"%(g,rep), "Polygon_Reference", "virtual")
+            
+            QgsMapLayerRegistry.instance().addMapLayer(self.vlyr)
+
+            self.myRubberBand.reset(QGis.Polygon)
+ 
             string = U"st_intersects(geom,st_geomfromewkt('SRID="+rep+";"+g+"'))"
-            
-            
+             
             self.layers = self.iface.mapCanvas().layers()
             
             for layer in self.layers:
                 layer.setSubsetString(string)
             
-            
-
-            self.myRubberBand.reset(QGis.Polygon)
-            self.disconnect()
-            self.unChecked()
+                self.myRubberBand.reset(QGis.Polygon)
+                self.disconnect()
+                self.unChecked()
 
     def mouseMove( self, currentPos ):
         if self.isEditing == 1:
