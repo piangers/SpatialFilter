@@ -24,10 +24,11 @@ class SpatialFilter():
         self.coordinates = []
 
         # Criação da action e da toolbar
+
         self.toolbar = self.iface.addToolBar("My_ToolBar")
-        pai = self.iface.mainWindow()
+        path = self.iface.mainWindow()
         icon_path = ':/plugins/SpatialFilter/icon.png'
-        self.action = QAction (QIcon (icon_path),u"Filtro EPSG.", pai)
+        self.action = QAction (QIcon (icon_path),u"Spatial Filter.", path)
         self.action.setObjectName ("Filtro EPSG.")
         self.action.setStatusTip(None)
         self.action.setWhatsThis(None)
@@ -95,31 +96,33 @@ class SpatialFilter():
             g=geomP.exportToWkt() # Get WKT coordenates.
 
             canvas=self.iface.mapCanvas()
+
             c = canvas.mapRenderer().destinationCrs().authid() # Get EPSG.
             rep = c.replace("EPSG:","") 
-            self.vlyr = QgsVectorLayer("?query=SELECT geom_from_wkt('%s') as geometry&geometry=geometry:3:%s"%(g,rep), "Polygon_Reference", "virtual")
+
+            vlyr = QgsVectorLayer("?query=SELECT geom_from_wkt('%s') as geometry&geometry=geometry:3:%s"%(g,rep), "Polygon_Reference", "virtual")
             
-            QgsMapLayerRegistry.instance().addMapLayer(self.vlyr)
+            QgsMapLayerRegistry.instance().addMapLayer(vlyr)
 
             self.myRubberBand.reset(QGis.Polygon)
  
             string = U"st_intersects(geom,st_geomfromewkt('SRID="+rep+";"+g+"'))"
              
-            self.layers = self.iface.mapCanvas().layers()
+            layers = self.iface.mapCanvas().layers()
             
-            for layer in self.layers:
+            for layer in layers:
                 try:
                     layer.setSubsetString(string)
                 except Exception:
                     pass
             
-                self.myRubberBand.reset(QGis.Polygon)
-                self.disconnect()
-                self.unChecked()
+            self.myRubberBand.reset(QGis.Polygon)
+            self.disconnect()
+            self.unChecked()
 
     def mouseMove( self, currentPos ):
         if self.isEditing == 1:
-            self.myRubberBand.movePoint( QgsPoint(currentPos) )
+            self.myRubberBand.movePoint(QgsPoint(currentPos))
 
 
 
