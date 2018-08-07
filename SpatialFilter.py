@@ -108,7 +108,10 @@ class SpatialFilter():
             self.layers = self.iface.mapCanvas().layers()
             
             for layer in self.layers:
-                layer.setSubsetString(string)
+                try:
+                    layer.setSubsetString(string)
+                except Exception:
+                    pass
             
                 self.myRubberBand.reset(QGis.Polygon)
                 self.disconnect()
