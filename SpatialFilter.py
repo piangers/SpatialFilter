@@ -1,43 +1,125 @@
 # -*- coding: utf-8 -*-
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import QColor, QInputDialog, QLineEdit, QAction, QIcon
-from qgis.core import QGis, QgsMapLayerRegistry, QgsDistanceArea, QgsFeature, QgsPoint, QgsGeometry, QgsField, QgsVectorLayer  
-from qgis.gui import QgsMapToolEmitPoint, QgsRubberBand, QgsMapTool
-import resources_rc
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
+from qgis.PyQt.QtWidgets import *
+from qgis.gui import *
+from qgis.core import *
+from SpatialFilter import resources_rc  
+import os
 
 class SpatialFilter():
     
 
     def __init__(self, iface):
+            
+        # Save reference to the QGIS interface   
         self.iface = iface
-		
-    def initGui(self): 
-		
-        # cria uma ação que iniciará a configuração do plugin 
+        # initialize plugin directory
+        self.plugin_dir = os.path.dirname(__file__)
+        # initialize locale
+        locale = QSettings().value('locale/userLocale')[0:2]
+        locale_path = os.path.join(
+            self.plugin_dir,
+            'i18n',
+            'BGTImport_{}.qm'.format(locale))
+
+        if os.path.exists(locale_path):
+            self.translator = QTranslator()
+            self.translator.load(locale_path)
+
+            if qVersion() > '4.3.3':
+                QCoreApplication.installTranslator(self.translator)
+
+
+        self.actions = []
+        self.menu = self.tr(u'&Batch Vector Layer Saver')
+        # TODO: We are going to let the user set this up in a future iteration
+        self.toolbar = self.iface.addToolBar(u'BatchVectorLayerSaver')
+        self.toolbar.setObjectName(u'SpatialFiler')
+
+       
+    def tr(self, message):
         
-        self.initVariables()
-        self.initSignals()
+        # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
+        return QCoreApplication.translate('BatchVectorLayerSaver', message)
         
-        
-    def initVariables(self):
+    def add_action(
+        self,
+        icon_path,
+        text,
+        callback,
+        enabled_flag=True,
+        add_to_menu=True,
+        add_to_toolbar=True,
+        status_tip=None,
+        whats_this=None,
+        parent=None):
+       
+        icon = QIcon(icon_path)
+        action = QAction(icon, text, parent)
+        action.triggered.connect(callback)
+        action.setEnabled(enabled_flag)
+
+        if status_tip is not None:
+            action.setStatusTip(status_tip)
+
+        if whats_this is not None:
+            action.setWhatsThis(whats_this)
+
+        if add_to_toolbar:
+            self.toolbar.addAction(action)
+
+        if add_to_menu:
+            self.iface.addPluginToVectorMenu(
+                self.menu,
+                action)
+
+        self.actions.append(action)
+
+        return action
+
+    def initGui(self):
+        """Create the menu entries and toolbar icons inside the QGIS GUI."""
         self.coordinates = []
+        icon_path = ':/plugins/SpatialFilter/icon.png'
+        self.add_action(
+            icon_path,
+            text=self.tr(u'SpatialFiler'),
+            callback=self.initSignals,
+            parent=self.iface.mainWindow())
+            
+        self.previousMapTool = self.iface.mapCanvas().mapTool()
+        self.myMapTool = QgsMapToolEmitPoint( self.iface.mapCanvas() )
+        self.isEditing = 0
+
+    def unload(self):
+        """Removes the plugin menu item and icon from QGIS GUI."""
+        for action in self.actions:
+            self.iface.removePluginVectorMenu(
+                self.tr(u'&SpatialFiler'),
+                action)
+            self.iface.removeToolBarIcon(self.action)
+        # remove the toolbar
+        del self.toolbar
+
+    
+    def initVariables(self):
+        
 
         # Criação da action e da toolbar
 
-        self.toolbar = self.iface.addToolBar("My_ToolBar")
+        self.toolbar = self.iface.addToolBar("Filtro Espacial")
         path = self.iface.mainWindow()
         icon_path = ':/plugins/SpatialFilter/icon.png'
-        self.action = QAction (QIcon (icon_path),u"Spatial Filter.", path)
-        self.action.setObjectName ("Filtro EPSG.")
+        self.action = QAction (QIcon (icon_path),u"Filtra o espaco de aquisição.", path)
+        self.action.setObjectName ("Spatial Filter.")
         self.action.setStatusTip(None)
         self.action.setWhatsThis(None)
         self.action.setCheckable(True)
         self.toolbar.addAction(self.action)
 
-        self.previousMapTool = self.iface.mapCanvas().mapTool()
-        self.myMapTool = QgsMapToolEmitPoint( self.iface.mapCanvas() )
-        self.isEditing = 0
+        
        
 
     def initSignals(self):
@@ -81,8 +163,8 @@ class SpatialFilter():
 
     def mouseClick( self, currentPos, clickedButton ):
         if clickedButton == Qt.LeftButton:# and myRubberBand.numberOfVertices() == 0: 
-            self.myRubberBand.addPoint( QgsPoint(currentPos) )
-            self.coordinates.append( QgsPoint(currentPos) )
+            self.myRubberBand.addPoint( QgsPointXY(currentPos) )
+            self.coordinates.append( QgsPointXY(currentPos) )
             self.isEditing = 1
             
         elif clickedButton == Qt.RightButton and self.myRubberBand.numberOfVertices() > 2:
@@ -122,7 +204,7 @@ class SpatialFilter():
 
     def mouseMove( self, currentPos ):
         if self.isEditing == 1:
-            self.myRubberBand.movePoint(QgsPoint(currentPos))
+            self.myRubberBand.movePoint(QgsPointXY(currentPos))
 
 
 

@@ -10,7 +10,8 @@
 
 [general]
 name=SpatialFilter
-qgisMinimumVersion=2.0
+qgisMinimumVersion=2.99
+qgisMaximumVersion=3.99
 description= DSG
 version=0.60
 author=Cesar Augusto Piangers
